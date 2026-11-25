@@ -1,14 +1,6 @@
-// tiny-stack-vm: a faithful interpreter of make.fun's tiny stack ISA v1
-// (kit/program/generator/subject/ISA.md; the reference VM vm.mjs beside it).
-// Runs every /input/<id>/ program.bin on its input.bin and writes
-// /output/<id>/stdout.bin + exit.txt. Every trap code, 32-bit wrap, shift
-// mask, step limit (1,000,000) and output limit (65,536 bytes) follows vm.mjs
-// exactly, in its check order: steps, pc, opcode, immediate fit, stack
-// under/overflow, then the instruction's own trap. That is what beats the
-// plain-vm 1.0.0 baseline, which folds every trap into exit 1, uses signed
-// DIVU/MODU/LTU, a float MUL, unmasked shifts and no stack/call/memory
-// bounds at all. Deterministic: no clock, no environment, no files outside
-// /input, /output and /bot. Node 22, built-ins only.
+// tiny-stack-vm: faithful interpreter of the tiny stack ISA v1 (see ISA.md).
+// Trap order: steps, pc, opcode, immediate fit, stack under/overflow, then
+// the instruction's own trap. Deterministic; Node 22, built-ins only.
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -56,7 +48,7 @@ function run(p: Uint8Array, inp: Uint8Array): { out: Uint8Array; code: number } 
     const op = p[pc];
     if (!OK[op]) return end(5);
     const im = IMM[op];
-    if (pc + im >= n) return end(9);
+    if (pc + im >= n) return end(9); // immediate must fit inside the program
     steps++;
     const nx = pc + 1 + im;
     if (sp < POP[op]) return end(2);
